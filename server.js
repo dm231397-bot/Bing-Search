@@ -1,44 +1,40 @@
-require('dotenv').config();
-const express = require('express');
-const axios = require('axios');
-const cors = require('cors');
+// server.js
+import express from "express";
+import fetch from "node-fetch";
+import cors from "cors";
 
 const app = express();
-const port = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3000;
 
+// Allow CORS so your frontend can call this server
 app.use(cors());
 app.use(express.json());
 
-// Replace with your Bing Search API key and endpoint
-const BING_API_KEY = process.env.BING_API_KEY;
-const BING_ENDPOINT = "https://api.bing.microsoft.com/v7.0/search";
-
-// Health check route
-app.get('/', (req, res) => {
-  res.send('Backend working successfully ✅');
+// Root route to test if backend is working
+app.get("/", (req, res) => {
+  res.send("Backend working successfully ✅");
 });
 
-// Bing search route
-app.get('/search', async (req, res) => {
+// Route to search using Bing Search API
+app.get("/search", async (req, res) => {
   const query = req.query.q;
-
-  if (!query) {
-    return res.status(400).json({ error: "Query parameter 'q' is required" });
-  }
+  if (!query) return res.status(400).json({ error: "Query parameter 'q' is required" });
 
   try {
-    const response = await axios.get(BING_ENDPOINT, {
-      headers: { "Ocp-Apim-Subscription-Key": BING_API_KEY },
-      params: { q: query, count: 10 } // adjust count as needed
+    const response = await fetch(`https://api.bing.microsoft.com/v7.0/search?q=${encodeURIComponent(query)}`, {
+      headers: {
+        "Ocp-Apim-Subscription-Key": process.env.BING_API_KEY, // Keep your key safe in Render environment variables
+      },
     });
 
-    res.json(response.data);
+    const data = await response.json();
+    res.json(data);
   } catch (error) {
-    console.error(error.response?.data || error.message);
-    res.status(500).json({ error: "Failed to fetch search results" });
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong with the Bing API" });
   }
 });
 
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
